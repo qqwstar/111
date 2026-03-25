@@ -13,6 +13,11 @@ input,select,textarea{
   width:100%;padding:10px 12px;border:1px solid #ddd;
   border-radius:8px;margin-bottom:8px;font-size:14px
 }
+/* 多选框样式优化 */
+select[multiple] {
+  height: auto;
+  min-height: 120px;
+}
 button{
   width:100%;padding:11px;background:#007aff;color:#fff;
   border:none;border-radius:8px;font-size:15px
@@ -43,9 +48,9 @@ button{
   <h3>➕ 添加记录</h3>
   <input id="name" placeholder="姓名">
   
-  <!-- 1-200数字选择下拉框 -->
-  <select id="numSelect">
-    <option value="">请选择编号</option>
+  <!-- 1-200多选数字框 -->
+  <select id="numSelect" multiple>
+    <option value="">请选择编号（可多选）</option>
     <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
     <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
     <option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
@@ -106,21 +111,22 @@ function save(data){
 
 function add(){
   let name = document.getElementById('name').value.trim()
-  // 从下拉框获取选中的编号
+  // 从多选框获取所有选中的编号
   let numSelect = document.getElementById('numSelect')
-  let num = numSelect.value.trim()
+  let selectedOptions = Array.from(numSelect.selectedOptions)
+  let nums = selectedOptions.map(opt => opt.value).join(',')
   let color = document.getElementById('color').value.trim()
   let remark = document.getElementById('remark').value.trim()
   
-  if(!name || !num){alert('请填姓名和选择编号');return}
+  if(!name || !nums){alert('请填姓名和选择编号');return}
   
   let arr = load()
-  arr.push({name,nums:num,color,remark})
+  arr.push({name,nums,color,remark})
   save(arr)
   
   // 重置输入
   document.getElementById('name').value=''
-  numSelect.selectedIndex = 0
+  numSelect.selectedIndex = -1
   document.getElementById('remark').value=''
   show()
 }
@@ -142,8 +148,11 @@ function show(){
     <div class="item" style="border-left-color:${item.color}">
       <div class="name">${item.name}</div>
       <div class="nums">`
-    // 显示选中的编号
-    html+=`<span class="tag" style="background:${item.color}">${item.nums}</span>`
+    // 拆分多个编号，显示成多个标签
+    let numList = item.nums.split(',')
+    numList.forEach(n => {
+      html+=`<span class="tag" style="background:${item.color}">${n}</span>`
+    })
     html+=`</div>
       <div class="remark">${item.remark?'备注：'+item.remark:''}</div>
     </div>`
@@ -155,3 +164,4 @@ show()
 </script>
 </body>
 </html>
+
