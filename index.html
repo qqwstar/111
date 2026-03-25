@@ -9,18 +9,17 @@
 body{background:#f4f5f7;padding:15px;max-width:500px;margin:0 auto}
 .card{background:#fff;border-radius:12px;padding:15px;margin-bottom:12px}
 h3{margin-bottom:10px;font-size:16px}
-input,select,textarea{
+input,select,textarea,button{
   width:100%;padding:10px 12px;border:1px solid #ddd;
   border-radius:8px;margin-bottom:8px;font-size:14px
 }
-/* 多选框样式优化 */
 select[multiple] {
   height: auto;
   min-height: 120px;
 }
 button{
-  width:100%;padding:11px;background:#007aff;color:#fff;
-  border:none;border-radius:8px;font-size:15px
+  background:#007aff;color:#fff;
+  border:none;font-size:15px
 }
 #result{margin-top:10px}
 .item{
@@ -35,22 +34,26 @@ button{
 }
 .remark{font-size:12px;color:#666}
 .empty{color:#999;text-align:center;padding:10px}
+.search-row{display:flex;gap:8px}
+.search-row input{flex:1;margin-bottom:0}
+.search-row button{width:auto;margin-bottom:0}
 </style>
 </head>
 <body>
 
 <div class="card">
   <h3>🔍 搜索姓名</h3>
-  <input id="search" placeholder="输入名字搜索..." oninput="show()">
+  <div class="search-row">
+    <input id="search" placeholder="输入名字搜索..." onkeydown="if(event.key==='Enter') search()">
+    <button onclick="search()">搜索</button>
+  </div>
 </div>
 
 <div class="card">
   <h3>➕ 添加记录</h3>
   <input id="name" placeholder="姓名">
   
-  <!-- 1-200多选数字框 -->
   <select id="numSelect" multiple>
-    <option value="">请选择编号（可多选）</option>
     <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
     <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
     <option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
@@ -111,57 +114,69 @@ function save(data){
 
 function add(){
   let name = document.getElementById('name').value.trim()
-  // 从多选框获取所有选中的编号
   let numSelect = document.getElementById('numSelect')
   let selectedOptions = Array.from(numSelect.selectedOptions)
-  let nums = selectedOptions.map(opt => opt.value).join(',')
+  let nums = selectedOptions.map(opt => opt.value).filter(Boolean).join(',')
   let color = document.getElementById('color').value.trim()
   let remark = document.getElementById('remark').value.trim()
   
-  if(!name || !nums){alert('请填姓名和选择编号');return}
-  
-  let arr = load()
-  arr.push({name,nums,color,remark})
-  save(arr)
-  
-  // 重置输入
-  document.getElementById('name').value=''
-  numSelect.selectedIndex = -1
-  document.getElementById('remark').value=''
-  show()
-}
-
-function show(){
-  let key = document.getElementById('search').value.trim()
-  let arr = load()
-  let list = document.getElementById('result')
-  if(key){
-    arr = arr.filter(item=>item.name.includes(key))
-  }
-  if(arr.length===0){
-    list.innerHTML = '<div class="empty">暂无结果</div>'
+  if(!name || !nums){
+    alert('请填写姓名并选择编号')
     return
   }
-  let html=''
-  arr.forEach(item=>{
-    html+=`
+  
+  let arr = load()
+  arr.push({name, nums, color, remark})
+  save(arr)
+  
+  document.getElementById('name').value = ''
+  numSelect.selectedIndex = -1
+  document.getElementById('remark').value = ''
+  
+  showAll()
+}
+
+function showAll(){
+  let arr = load()
+  renderList(arr)
+}
+
+function search(){
+  let key = document.getElementById('search').value.trim()
+  if(!key){
+    showAll()
+    return
+  }
+  let arr = load()
+  let result = arr.filter(item => item.name.includes(key))
+  renderList(result)
+}
+
+function renderList(list){
+  let box = document.getElementById('result')
+  if(list.length === 0){
+    box.innerHTML = '<div class="empty">暂无记录</div>'
+    return
+  }
+  let html = ''
+  list.forEach(item => {
+    html += `
     <div class="item" style="border-left-color:${item.color}">
       <div class="name">${item.name}</div>
       <div class="nums">`
-    // 拆分多个编号，显示成多个标签
-    let numList = item.nums.split(',')
-    numList.forEach(n => {
-      html+=`<span class="tag" style="background:${item.color}">${n}</span>`
+    let numArr = item.nums.split(',')
+    numArr.forEach(n => {
+      html += `<span class="tag" style="background:${item.color}">${n}</span>`
     })
-    html+=`</div>
-      <div class="remark">${item.remark?'备注：'+item.remark:''}</div>
+    html += `
+      </div>
+      <div class="remark">${item.remark ? '备注：'+item.remark : ''}</div>
     </div>`
   })
-  list.innerHTML = html
+  box.innerHTML = html
 }
 
-show()
+window.onload = showAll
 </script>
 </body>
 </html>
-
