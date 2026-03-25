@@ -20,7 +20,8 @@ button{
 #result{margin-top:10px}
 .item{
   padding:12px;border-left:4px solid #007aff;background:#fff;
-  border-radius:8px;margin-bottom:8px
+  border-radius:8px;margin-bottom:8px;
+  position:relative;
 }
 .name{font-weight:bold;margin-bottom:6px;font-size:16px}
 .nums{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
@@ -59,23 +60,83 @@ button{
   margin:12px 0 8px 0;
   font-weight:500;
 }
-/* 日期搜索栏样式 */
-.date-search-row{display:flex;gap:8px;margin-top:8px}
-.date-search-row input{flex:1;margin-bottom:0}
-.date-search-row button{width:auto;margin-bottom:0}
+/* 折叠面板样式 */
+.collapsible{
+  background:#f0f0f0;
+  cursor:pointer;
+  padding:12px;
+  width:100%;
+  border:none;
+  text-align:left;
+  outline:none;
+  font-size:14px;
+  border-radius:8px;
+  margin-bottom:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.collapsible:after{
+  content: '▼';
+  font-size:12px;
+  color:#666;
+  transition: transform 0.2s;
+}
+.collapsible.active:after{
+  transform: rotate(180deg);
+}
+.collapsible-content{
+  max-height:0;
+  overflow:hidden;
+  transition: max-height 0.3s ease-out;
+  background:#fff;
+  border-radius:0 0 8px 8px;
+}
+/* 删除按钮样式 */
+.delete-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  background:#ff3b30;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:4px 8px;
+  font-size:12px;
+  cursor:pointer;
+  width:auto;
+}
+/* 清空按钮样式 */
+.clear-row{
+  text-align:right;
+  margin-top:8px;
+}
+.clear-btn{
+  background:#ff3b30;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:8px 16px;
+  font-size:14px;
+  cursor:pointer;
+  width:auto;
+}
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h3>🔍 搜索姓名</h3>
+  <h3>🔍 搜索</h3>
   <div class="search-row">
     <input id="searchName" placeholder="输入名字搜索..." onkeydown="if(event.key==='Enter') searchByName()">
     <button onclick="searchByName()">按姓名搜索</button>
   </div>
-  <div class="date-search-row">
+  <div class="search-row" style="margin-top:8px">
     <input id="searchDate" placeholder="输入日期（YYYY-MM-DD）搜索..." onkeydown="if(event.key==='Enter') searchByDate()">
     <button onclick="searchByDate()">按日期搜索</button>
+  </div>
+  <div class="clear-row">
+    <button class="clear-btn" onclick="clearAllData()">清空全部记录</button>
   </div>
 </div>
 
@@ -83,8 +144,11 @@ button{
   <h3>➕ 添加记录</h3>
   <input id="name" placeholder="姓名">
   
-  <!-- 1-200数字选择网格 -->
-  <div id="numGrid" class="num-grid"></div>
+  <!-- 折叠式数字选择面板 -->
+  <button type="button" class="collapsible" id="numCollapsible">选择编号（点击展开/折叠）</button>
+  <div class="collapsible-content">
+    <div id="numGrid" class="num-grid"></div>
+  </div>
   
   <input id="color" value="#007aff" placeholder="颜色">
   <textarea id="remark" rows="2" placeholder="备注"></textarea>
@@ -94,6 +158,20 @@ button{
 <div id="result"></div>
 
 <script>
+// 初始化折叠面板
+function initCollapsible(){
+  let coll = document.getElementById('numCollapsible')
+  let content = coll.nextElementSibling
+  coll.addEventListener('click', function(){
+    this.classList.toggle('active')
+    if(content.style.maxHeight){
+      content.style.maxHeight = null
+    }else{
+      content.style.maxHeight = content.scrollHeight + 'px'
+    }
+  })
+}
+
 // 获取今日日期（YYYY-MM-DD格式）
 function getTodayStr(){
   let d = new Date()
@@ -136,7 +214,6 @@ function add(){
   if(!name || !nums){alert('请填姓名和选择编号');return}
   
   let arr = load()
-  // 保存时绑定今日日期
   arr.push({
     name,
     nums,
@@ -150,7 +227,12 @@ function add(){
   document.getElementById('name').value=''
   document.querySelectorAll('.num-item.selected').forEach(el => el.classList.remove('selected'))
   document.getElementById('remark').value=''
-  // 保存后显示今日记录
+  // 保存后收起数字面板
+  let coll = document.getElementById('numCollapsible')
+  let content = coll.nextElementSibling
+  coll.classList.remove('active')
+  content.style.maxHeight = null
+  // 显示今日记录
   showToday()
 }
 
@@ -158,12 +240,11 @@ function add(){
 function showToday(){
   let today = getTodayStr()
   let arr = load()
-  // 只保留今日的记录
   let todayList = arr.filter(item => item.date === today)
   renderList(todayList, true)
 }
 
-// 按姓名搜索：只显示姓名匹配的记录
+// 按姓名搜索
 function searchByName(){
   let key = document.getElementById('searchName').value.trim()
   let arr = load()
@@ -174,13 +255,12 @@ function searchByName(){
   renderList(result, false)
 }
 
-// 按日期搜索：只显示指定日期的记录
+// 按日期搜索
 function searchByDate(){
   let key = document.getElementById('searchDate').value.trim()
   let arr = load()
   let result = arr
   if(key){
-    // 验证日期格式（YYYY-MM-DD）
     if(!/^\d{4}-\d{2}-\d{2}$/.test(key)){
       alert('日期格式错误，请输入YYYY-MM-DD格式，例如：2026-03-25')
       return
@@ -190,7 +270,24 @@ function searchByDate(){
   renderList(result, false)
 }
 
-// 渲染列表（区分今日/搜索结果）
+// 删除单条记录
+function deleteItem(index){
+  let arr = load()
+  arr.splice(index, 1)
+  save(arr)
+  // 删除后刷新列表
+  showToday()
+}
+
+// 清空全部记录
+function clearAllData(){
+  if(confirm('确定要清空所有记录吗？此操作不可恢复！')){
+    localStorage.removeItem('mydata')
+    showToday()
+  }
+}
+
+// 渲染列表（带删除按钮）
 function renderList(list, isToday){
   let box = document.getElementById('result')
   if(list.length === 0){
@@ -198,13 +295,13 @@ function renderList(list, isToday){
     return
   }
   let html = ''
-  // 今日显示日期标题
   if(isToday){
     html += `<div class="date-title">今日（${getTodayStr()}）已保存记录</div>`
   }
-  list.forEach(item => {
+  list.forEach((item, index) => {
     html += `
     <div class="item" style="border-left-color:${item.color}">
+      <button class="delete-btn" onclick="deleteItem(${index})">删除</button>
       <div class="name">${item.name}</div>
       <div class="nums">`
     let numArr = item.nums.split(',')
@@ -221,6 +318,7 @@ function renderList(list, isToday){
 
 // 页面加载完成后初始化
 window.onload = function(){
+  initCollapsible()
   initNumGrid()
   showToday()
 }
