@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人员编号记录</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{background:#f4f5f7;padding:15px;max-width:500px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:15px;margin-bottom:12px}
+h3{margin-bottom:10px;font-size:16px}
+input,textarea{
+  width:100%;padding:10px 12px;border:1px solid #ddd;
+  border-radius:8px;margin-bottom:8px;font-size:14px
+}
+button{
+  width:100%;padding:11px;background:#007aff;color:#fff;
+  border:none;border-radius:8px;font-size:15px
+}
+#result{margin-top:10px}
+.item{
+  padding:12px;border-left:4px solid #007aff;background:#fff;
+  border-radius:8px;margin-bottom:8px
+}
+.name{font-weight:bold;margin-bottom:6px}
+.nums{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.tag{
+  background:#007aff;color:#fff;padding:4px 8px;
+  border-radius:6px;font-size:12px
+}
+.remark{font-size:12px;color:#666}
+.empty{color:#999;text-align:center;padding:10px}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h3>🔍 搜索姓名</h3>
+  <input id="search" placeholder="输入名字搜索..." oninput="show()">
+</div>
+
+<div class="card">
+  <h3>➕ 添加记录</h3>
+  <input id="name" placeholder="姓名">
+  <input id="num" placeholder="编号：1,2,3">
+  <input id="color" value="#007aff" placeholder="颜色">
+  <textarea id="remark" rows="2" placeholder="备注"></textarea>
+  <button onclick="add()">保存</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+function load(){
+  let d = localStorage.getItem('mydata')
+  return d ? JSON.parse(d) : []
+}
+function save(data){
+  localStorage.setItem('mydata', JSON.stringify(data))
+}
+
+function add(){
+  let name = document.getElementById('name').value.trim()
+  let num = document.getElementById('num').value.trim()
+  let color = document.getElementById('color').value.trim()
+  let remark = document.getElementById('remark').value.trim()
+  if(!name || !num){alert('请填姓名和编号');return}
+  let nums = num.split(',').map(x=>x.trim()).filter(x=>x)
+  let arr = load()
+  arr.push({name,nums,color,remark})
+  save(arr)
+  document.getElementById('name').value=''
+  document.getElementById('num').value=''
+  document.getElementById('remark').value=''
+  show()
+}
+
+function show(){
+  let key = document.getElementById('search').value.trim()
+  let arr = load()
+  let list = document.getElementById('result')
+  if(key){
+    arr = arr.filter(item=>item.name.includes(key))
+  }
+  if(arr.length===0){
+    list.innerHTML = '<div class="empty">暂无结果</div>'
+    return
+  }
+  let html=''
+  arr.forEach(item=>{
+    html+=`
+    <div class="item" style="border-left-color:${item.color}">
+      <div class="name">${item.name}</div>
+      <div class="nums">`
+    item.nums.forEach(n=>{
+      html+=`<span class="tag" style="background:${item.color}">${n}</span>`
+    })
+    html+=`</div>
+      <div class="remark">${item.remark?'备注：'+item.remark:''}</div>
+    </div>`
+  })
+  list.innerHTML = html
+}
+
+show()
+</script>
+</body>
+</html>
